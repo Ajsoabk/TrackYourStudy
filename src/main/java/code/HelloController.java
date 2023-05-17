@@ -1,6 +1,7 @@
 package code;
 
 import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXComboBox;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -83,6 +84,8 @@ public class HelloController extends Application {
         primaryStage.show();
     }
 
+    private JFXComboBox<Integer> semesterInput;
+    private Label gpaLabel;
     private List<Course> courseList = new ArrayList<>();
     private TableView<Course> courseTable = new TableView<>();
 
@@ -92,7 +95,7 @@ public class HelloController extends Application {
     private TextField teacherNameField = new TextField();
     private TextField courseMarkField = new TextField();
 
-    private TableView<Award> table;
+    private TableView<Award> awardTable;
     private TextField nameInput;
     private TextField tagInput;
     private TextArea descriptionInput;
@@ -107,7 +110,6 @@ public class HelloController extends Application {
 
         if (selectedFile != null) {
             readCourseData(selectedFile);
-
             displayCourseTable();
         }
     }
@@ -124,24 +126,19 @@ public class HelloController extends Application {
             String courseName = parts[0];
             String courseId = parts[1];
             String teacherName = parts[2];
+            int semester = Integer.parseInt(parts[3]);
             double courseMark = Double.parseDouble(parts[3]);
 
-            Course course = new Course(courseName, courseId, teacherName, courseMark);
+            Course course = new Course(courseName, courseId, teacherName, semester,courseMark);
             courseList.add(course);
         }
 
         scanner.close();
     }
     private void displayCourseTable() {
-
-
         // Clear the table
         courseTable.getItems().clear();
         courseTable.getColumns().clear();
-
-
-        TableColumn<Course, Integer> idColumn = new TableColumn<>("ID");
-        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
 
         // Create TableColumn objects for each column in the table
         TableColumn<Course, String> courseNameColumn = new TableColumn<>("Course Name");
@@ -153,6 +150,10 @@ public class HelloController extends Application {
         TableColumn<Course, String> teacherNameColumn = new TableColumn<>("Teacher Name");
         teacherNameColumn.setCellValueFactory(new PropertyValueFactory<>("teacherName"));
 
+        TableColumn<Course, Integer> semesterColumn = new TableColumn<>("Semester");
+        semesterColumn.setCellValueFactory(new PropertyValueFactory<>("semester"));
+
+
         TableColumn<Course, Double> courseMarkColumn = new TableColumn<>("Course Mark");
         courseMarkColumn.setCellValueFactory(new PropertyValueFactory<>("courseMark"));
 
@@ -160,7 +161,7 @@ public class HelloController extends Application {
         GPAcolumn.setCellValueFactory(new PropertyValueFactory<>("GPA"));
 
         // Add the columns to the table
-        courseTable.getColumns().addAll(idColumn,courseNameColumn, courseIdColumn, teacherNameColumn, courseMarkColumn, GPAcolumn);
+        courseTable.getColumns().addAll(courseNameColumn, courseIdColumn, teacherNameColumn, semesterColumn,courseMarkColumn, GPAcolumn);
 
         // Add the course data to the table
         courseTable.getItems().addAll(courseList);
@@ -168,7 +169,6 @@ public class HelloController extends Application {
 
         for (int i = 0; i < courseList.size(); i++) {
             Course course = courseList.get(i);
-            course.setId(i+1);
             courseTable.getItems().add(course);
         }
     }
@@ -181,19 +181,12 @@ public class HelloController extends Application {
 
         if (file != null) {
             FileWriter writer = new FileWriter(file);
-
             // Write the header row
-            writer.write("Course Name,Course ID,Teacher Name,Course Mark,GPA\n");
-
+            writer.write(Course.headColumn());
             // Write the data rows
             for (Course course : courseList) {
-                writer.write(course.getCourseName() + ",");
-                writer.write(course.getCourseId() + ",");
-                writer.write(course.getTeacherName() + ",");
-                writer.write(course.getCourseMark() + ",");
-                writer.write(course.getGPA() + "\n");
+                writer.write(course+"\n");
             }
-
             writer.close();
         }
     }
@@ -216,93 +209,115 @@ public class HelloController extends Application {
                 e.printStackTrace();
             }
         });
+        courseNameField = new TextField();
+        courseNameField.setPromptText("Course Name");
 
-        // Create a GridPane to hold the input fields
-        // Create the input fields and labels
-        GridPane inputGrid = new GridPane();
-        inputGrid.setAlignment(Pos.CENTER);
-        inputGrid.setHgap(10);
-        inputGrid.setVgap(10);
-        inputGrid.setPadding(new Insets(10, 10, 10, 10));
-        inputGrid.add(new Label("Course Name:"), 0, 0);
-        inputGrid.add(courseNameField, 1, 0);
-        inputGrid.add(new Label("Course ID:"), 0, 1);
-        inputGrid.add(courseIdField, 1, 1);
-        inputGrid.add(new Label("Teacher Name:"), 0, 2);
-        inputGrid.add(teacherNameField, 1, 2);
-        inputGrid.add(new Label("Course Mark:"), 0, 3);
-        inputGrid.add(courseMarkField, 1, 3);
+        courseIdField = new TextField();
+        courseIdField.setPromptText("Course Id");
 
-        // Create a button to add the input as a new row in the table
-        Button addButton = new Button("Add Course");
-        addButton.setOnAction(event -> {
-            addCourse();
-        });
-        Button deleteButton = new Button("Delete Course");
-        deleteButton.setOnAction(event -> {
-            Course selectedCourse = courseTable.getSelectionModel().getSelectedItem();
-            if (selectedCourse != null) {
-                deleteCourseById(selectedCourse.getId());
+        teacherNameField = new TextField();
+        teacherNameField.setPromptText("Teacher name");
+
+        semesterInput = new JFXComboBox<>();
+        semesterInput.setPromptText("Semester");
+        semesterInput.setItems(FXCollections.observableArrayList(1, 2, 3, 4, 5, 6, 7, 8));
+
+        courseMarkField = new TextField();
+        courseMarkField.setPromptText("Mark");
+        courseMarkField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (!newValue.matches("\\d*")) {
+                courseMarkField.setText(newValue.replaceAll("[^\\d]", ""));
             }
         });
-        // Create an HBox to hold the add button
-        HBox addButtonBox = new HBox(10);
-        addButtonBox.setAlignment(Pos.CENTER);
-        addButtonBox.getChildren().addAll(addButton,deleteButton);
 
-        // Create a VBox to hold the input fields and add button
-        VBox inputBox = new VBox(10);
-        inputBox.setAlignment(Pos.CENTER);
-        inputBox.getChildren().addAll(inputGrid, addButtonBox);
+        gpaLabel = new Label();
+
+        // Add button
+        JFXButton addButton = new JFXButton("Add");
+        addButton.setOnAction(event -> addCourseButtonClicked());
+
+        // Delete button
+        JFXButton deleteButton = new JFXButton("Delete");
+        deleteButton.setOnAction(event -> deleteCourseButtonClicked());
+
+        // Button HBox
+        HBox courseInfo_Add_DeleteBox = new HBox();
+        courseInfo_Add_DeleteBox.setPadding(new Insets(10));
+        courseInfo_Add_DeleteBox.setSpacing(10);
+        courseInfo_Add_DeleteBox.getChildren().addAll(courseNameField, courseIdField, teacherNameField,semesterInput, courseMarkField, addButton, deleteButton, gpaLabel);
+
+        courseTable.setItems(getCourses());
+        displayCourseTable();
+        // BorderPane
+        BorderPane borderPane = new BorderPane();
+        borderPane.setCenter(courseTable);
+        borderPane.setBottom(courseInfo_Add_DeleteBox);
+
+        // VBox
+        VBox vBox = new VBox();
+        vBox.setPadding(new Insets(10));
+        vBox.setSpacing(10);
+        vBox.getChildren().addAll(borderPane);
 
         // Create an HBox to hold the buttons
-        HBox buttonBox = new HBox(10);
-        buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.getChildren().addAll(chooseFileButton, exportFileButton);
+        HBox import_ExportBox = new HBox(10);
+        import_ExportBox.setAlignment(Pos.CENTER);
+        import_ExportBox.getChildren().addAll(chooseFileButton, exportFileButton);
 
         // Create a VBox to hold the input box, button box, and table
         VBox tableBox = new VBox(10);
         tableBox.setAlignment(Pos.CENTER);
-        tableBox.getChildren().addAll(buttonBox, courseTable);
+        tableBox.getChildren().addAll(import_ExportBox, vBox);
 
-        HBox pageBox = new HBox(10);
-        pageBox.setAlignment(Pos.CENTER);
-        pageBox.getChildren().addAll(tableBox,inputBox);
-
-        return pageBox;
+        return tableBox;
     }
-    private void addCourse(){
-        String courseName = courseNameField.getText();
-        String courseId = courseIdField.getText();
-        String teacherName = teacherNameField.getText();
-        String courseMarkString = courseMarkField.getText();
+    public void deleteCourseButtonClicked() {
+        ObservableList<Course> selectedCourses, allCourses;
+        allCourses = courseTable.getItems();
+        selectedCourses = courseTable.getSelectionModel().getSelectedItems();
 
-        if (courseName.isEmpty() || courseId.isEmpty() || teacherName.isEmpty() || courseMarkString.isEmpty()) {
-            return;
-        }
+        selectedCourses.forEach(allCourses::remove);
 
-        double courseMark = Double.parseDouble(courseMarkString);
-
-        Course course = new Course(courseName, courseId, teacherName, courseMark);
-        courseList.add(course);
-        displayCourseTable();
-        clearInputFields();
+        gpaLabel.setText("Average GPA: " + String.format("%.2f", Course.averageGPAOf(courseTable)));
     }
+    public void addCourseButtonClicked() {
+        if (!courseNameField.getText().isEmpty() &&!courseIdField.getText().isEmpty()&& !semesterInput.getSelectionModel().isEmpty()&&!teacherNameField.getText().isEmpty()) {
+            String courseName = courseNameField.getText();
+            String courseId = courseIdField.getText();
+            int semester = semesterInput.getValue();
+            String teacherName = teacherNameField.getText();
 
-    private void deleteCourseById(int id) {
-        for (int i = 0; i < courseList.size(); i++) {
-            if (courseList.get(i).getId() == id) {
-                courseList.remove(i);
-                break;
+            double mark;
+            if(courseMarkField.getText().isEmpty()){
+                mark=0;
             }
+            else mark=Double.parseDouble(courseMarkField.getText());
+            Course course = new Course(courseName,courseId, teacherName, semester, mark);
+            courseTable.getItems().add(course);
+
+            nameInput.clear();
+            semesterInput.getSelectionModel().clearSelection();
+            courseMarkField.clear();
+
+            gpaLabel.setText("Average GPA:"+String.format("%.2f",Course.averageGPAOf(courseTable)));
         }
-        // Update the IDs of the remaining courses
-        for (int i = 0; i < courseList.size(); i++) {
-            Course course = courseList.get(i);
-            course.setId(i+1);
-        }
-        displayCourseTable();
     }
+    public ObservableList<Course> getCourses() {
+        ObservableList<Course> courses = FXCollections.observableArrayList();
+        courses.add(new Course("Physics", "PHY101", "Mr Wang",1, 87));
+        courses.add(new Course( "Mathematics", "MAT101", "Prof Lee",1, 92));
+        courses.add(new Course("Chemistry", "CHE101", "Prof Six",1, 78));
+        courses.add(new Course("English", "ENG101", "Liu ye",1, 85));
+        courses.add(new Course( "History", "HIS101", "Jack",1, 91));
+        return courses;
+    }
+    public void deleteAwardButtonClicked() {
+        ObservableList<Award> selectedAwards, allAwards;
+        allAwards = awardTable.getItems();
+        selectedAwards = awardTable.getSelectionModel().getSelectedItems();
+        selectedAwards.forEach(allAwards::remove);
+    }
+
     private Pane createProfilePage(Stage primaryStage){
         // Create a Button
         Button selectProfilePictureBtn = new Button("Select Profile Picture");
@@ -417,9 +432,9 @@ public class HelloController extends Application {
 
         // Buttons
         Button addButton = new Button("Add");
-        addButton.setOnAction(event -> addButtonClicked());
+        addButton.setOnAction(event -> addAwardButtonClicked());
         Button deleteButton = new Button("Delete");
-        deleteButton.setOnAction(event -> deleteButtonClicked());
+        deleteButton.setOnAction(event -> deleteAwardButtonClicked());
 
         // Button HBox
         HBox buttonBox = new HBox();
@@ -428,32 +443,32 @@ public class HelloController extends Application {
         buttonBox.getChildren().addAll(timeInput, nameInput, tagInput, descriptionInput, addButton, deleteButton);
 
         // Table
-        table = new TableView<>();
-        table.setItems(getAwards());
-        table.getColumns().addAll(timeColumn, nameColumn, tagColumn, descriptionColumn);
+        awardTable = new TableView<>();
+        awardTable.setItems(getAwardsExample());
+        awardTable.getColumns().addAll(timeColumn, nameColumn, tagColumn, descriptionColumn);
 
         // BorderPane
         BorderPane borderPane = new BorderPane();
-        borderPane.setCenter(table);
+        borderPane.setCenter(awardTable);
         borderPane.setBottom(buttonBox);
 
         // Inline CSS
         buttonBox.setStyle("-fx-background-color: white; -fx-border-style: solid; -fx-border-width: 1px; -fx-border-color: black; -fx-padding: 10px;");
         addButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
         deleteButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white;");
-        table.setStyle("-fx-border-style: none none solid none; -fx-border-width: 1px; -fx-border-color: black;");
+        awardTable.setStyle("-fx-border-style: none none solid none; -fx-border-width: 1px; -fx-border-color: black;");
 
         VBox rootBox=new VBox(profileBox,borderPane);
         return rootBox;
     }
-    public void addButtonClicked() {
+    public void addAwardButtonClicked() {
         if (timeInput.getValue() != null) {
             Award award = new Award();
             award.setTime(timeInput.getValue());
             award.setName(nameInput.getText());
             award.setTag(tagInput.getText());
             award.setDescription(descriptionInput.getText());
-            table.getItems().add(award);
+            awardTable.getItems().add(award);
             timeInput.setValue(null);
             nameInput.clear();
             tagInput.clear();
@@ -461,16 +476,8 @@ public class HelloController extends Application {
         }
     }
 
-    // Delete button clicked
-    public void deleteButtonClicked() {
-        ObservableList<Award> selectedAwards, allAwards;
-        allAwards = table.getItems();
-        selectedAwards = table.getSelectionModel().getSelectedItems();
-        selectedAwards.forEach(allAwards::remove);
-    }
-
     // Get all of the awards
-    public ObservableList<Award> getAwards() {
+    public ObservableList<Award> getAwardsExample() {
         ObservableList<Award> awards = FXCollections.observableArrayList();
         awards.add(new Award(LocalDate.of(2023, 5, 10), "Best Actor", "Cinema", "Award for the best acting performance in a leading role"));
         awards.add(new Award(LocalDate.of(2022, 9, 20), "Best Director", "Cinema", "Award for the best directing achievement in a motion picture"));
