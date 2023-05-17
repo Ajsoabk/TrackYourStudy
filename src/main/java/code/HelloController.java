@@ -1,8 +1,10 @@
 package code;
+
 import com.jfoenix.controls.JFXButton;
 import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.stage.Modality;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -10,13 +12,16 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -77,6 +82,7 @@ public class HelloController extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
     }
+
     private List<Course> courseList = new ArrayList<>();
     private TableView<Course> courseTable = new TableView<>();
 
@@ -86,6 +92,11 @@ public class HelloController extends Application {
     private TextField teacherNameField = new TextField();
     private TextField courseMarkField = new TextField();
 
+    private TableView<Award> table;
+    private TextField nameInput;
+    private TextField tagInput;
+    private TextArea descriptionInput;
+    private DatePicker timeInput;
     private void chooseCSVFile(Stage primaryStage) throws IOException {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open CSV File");
@@ -375,9 +386,97 @@ public class HelloController extends Application {
         profileBox.getChildren().addAll(selectProfilePictureBtn,profileInformationBox );
 
 
-        return profileBox;
+        // Time column
+        TableColumn<Award, LocalDate> timeColumn = new TableColumn<>("Time");
+        timeColumn.setMinWidth(100);
+        timeColumn.setCellValueFactory(new PropertyValueFactory<>("time"));
+
+        // Name column
+        TableColumn<Award, String> nameColumn = new TableColumn<>("Award Name");
+        nameColumn.setMinWidth(150);
+        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+
+        // Tag column
+        TableColumn<Award, String> tagColumn = new TableColumn<>("Tag");
+        tagColumn.setMinWidth(100);
+        tagColumn.setCellValueFactory(new PropertyValueFactory<>("tag"));
+
+        // Description column
+        TableColumn<Award, String> descriptionColumn = new TableColumn<>("Description");
+        descriptionColumn.setMinWidth(300);
+        descriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+
+        // Inputs
+        timeInput = new DatePicker();
+        nameInput = new TextField();
+        nameInput.setPromptText("Award Name");
+        tagInput = new TextField();
+        tagInput.setPromptText("Tag");
+        descriptionInput = new TextArea();
+        descriptionInput.setPromptText("Description");
+
+        // Buttons
+        Button addButton = new Button("Add");
+        addButton.setOnAction(event -> addButtonClicked());
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(event -> deleteButtonClicked());
+
+        // Button HBox
+        HBox buttonBox = new HBox();
+        buttonBox.setPadding(new Insets(10));
+        buttonBox.setSpacing(10);
+        buttonBox.getChildren().addAll(timeInput, nameInput, tagInput, descriptionInput, addButton, deleteButton);
+
+        // Table
+        table = new TableView<>();
+        table.setItems(getAwards());
+        table.getColumns().addAll(timeColumn, nameColumn, tagColumn, descriptionColumn);
+
+        // BorderPane
+        BorderPane borderPane = new BorderPane();
+        borderPane.setCenter(table);
+        borderPane.setBottom(buttonBox);
+
+        // Inline CSS
+        buttonBox.setStyle("-fx-background-color: white; -fx-border-style: solid; -fx-border-width: 1px; -fx-border-color: black; -fx-padding: 10px;");
+        addButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+        deleteButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white;");
+        table.setStyle("-fx-border-style: none none solid none; -fx-border-width: 1px; -fx-border-color: black;");
+
+        VBox rootBox=new VBox(profileBox,borderPane);
+        return rootBox;
+    }
+    public void addButtonClicked() {
+        if (timeInput.getValue() != null) {
+            Award award = new Award();
+            award.setTime(timeInput.getValue());
+            award.setName(nameInput.getText());
+            award.setTag(tagInput.getText());
+            award.setDescription(descriptionInput.getText());
+            table.getItems().add(award);
+            timeInput.setValue(null);
+            nameInput.clear();
+            tagInput.clear();
+            descriptionInput.clear();
+        }
     }
 
+    // Delete button clicked
+    public void deleteButtonClicked() {
+        ObservableList<Award> selectedAwards, allAwards;
+        allAwards = table.getItems();
+        selectedAwards = table.getSelectionModel().getSelectedItems();
+        selectedAwards.forEach(allAwards::remove);
+    }
+
+    // Get all of the awards
+    public ObservableList<Award> getAwards() {
+        ObservableList<Award> awards = FXCollections.observableArrayList();
+        awards.add(new Award(LocalDate.of(2023, 5, 10), "Best Actor", "Cinema", "Award for the best acting performance in a leading role"));
+        awards.add(new Award(LocalDate.of(2022, 9, 20), "Best Director", "Cinema", "Award for the best directing achievement in a motion picture"));
+        awards.add(new Award(LocalDate.of(2021, 11, 5), "Nobel Prize in Physics", "Science", "Award for outstanding contributions to the field of physics"));
+        return awards;
+    }
     // Helper method to create a button with an icon
     private JFXButton createButtonWithIcon(String iconName, String description) {
         Image iconImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream(iconName)));
