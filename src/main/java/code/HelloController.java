@@ -126,16 +126,20 @@ public class HelloController extends Application {
             String line = scanner.nextLine();
             String[] parts = line.split(",");
 
+            if(Objects.equals(parts[0], "Course Name")){
+                continue;
+            }
             String courseName = parts[0];
             String courseId = parts[1];
             String teacherName = parts[2];
             int semester = Integer.parseInt(parts[3]);
-            double courseMark = Double.parseDouble(parts[3]);
-
-            Course course = new Course(courseName, courseId, teacherName, semester,courseMark,false);
-            courseList.add(course);
+            if(parts.length==4){
+                courseList.add(new Course(courseName,courseId,teacherName,semester,0,true));
+            }
+            else{
+                courseList.add(new Course(courseName,courseId,teacherName,semester,Double.parseDouble(parts[4]),true));
+            }
         }
-
         scanner.close();
     }
     private void displayCourseTable() {
@@ -170,8 +174,7 @@ public class HelloController extends Application {
         courseTable.getItems().addAll(courseList);
         courseTable.getItems().clear();
 
-        for (int i = 0; i < courseList.size(); i++) {
-            Course course = courseList.get(i);
+        for (Course course : courseList) {
             courseTable.getItems().add(course);
         }
     }
@@ -185,9 +188,9 @@ public class HelloController extends Application {
         if (file != null) {
             FileWriter writer = new FileWriter(file);
             // Write the header row
-            writer.write(Course.headColumn());
+            writer.write(Course.headColumn()+"\n");
             // Write the data rows
-            for (Course course : courseList) {
+            for (Course course : courseTable.getItems()) {
                 writer.write(course+"\n");
             }
             writer.close();

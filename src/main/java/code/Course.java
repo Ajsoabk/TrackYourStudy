@@ -32,7 +32,10 @@ public class Course {
     }
     @Override
     public String toString(){
-        return getCourseName() + ","+getCourseId() + ","+getTeacherName() + ","+getSemester()+","+getMark();
+        if(isStudying()){
+            return getCourseName() + ","+getCourseId() + ","+getTeacherName() + ","+getSemester();
+        }
+        return getCourseName() + ","+getCourseId() + ","+getTeacherName() + ","+getSemester()+","+getMark()+","+getGpa();
     }
 
     public void setMark(double mark) {
@@ -52,7 +55,7 @@ public class Course {
     }
 
     public static String headColumn(){
-        return "Course Name,Course ID,Teacher Name,Semester,Course Mark";
+        return "Course Name,Course ID,Teacher Name,Semester,Course Mark,Gpa";
     }
     public String getCourseName() {
         return courseName.get();
