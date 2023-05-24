@@ -81,24 +81,17 @@ public class Course {
         this.teacherName.set(teacherName);
     }
     public double calculateGpa(double mark) {
-        if (mark >= 90) {
-            return 4.0;
-        } else if (mark >= 80) {
-            return 3.0;
-        } else if (mark >= 70) {
-            return 2.0;
-        } else if (mark >= 60) {
-            return 1.0;
-        }else {
+        if(mark<60){
             return 0;
         }
+        return mark/25;
     }
     public static double averageGPAOf(TableView<Course> table){
         // Calculate and display GPA
         double totalGpa = 0;
         int count = 0;
         for (Course c : table.getItems()) {
-            if(c.getGpa()!=-1){
+            if(c.getGpa()>0){
                 totalGpa += c.getGpa();
                 count++;
             }
