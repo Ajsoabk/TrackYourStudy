@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class HelloController extends Application {
 
@@ -81,6 +83,7 @@ public class HelloController extends Application {
         // Create a scene and set it on the primary stage
         Scene scene = new Scene(hBox, 1200, 800);
         primaryStage.setScene(scene);
+        primaryStage.setFullScreen(true);
         primaryStage.show();
     }
 
@@ -129,7 +132,7 @@ public class HelloController extends Application {
             int semester = Integer.parseInt(parts[3]);
             double courseMark = Double.parseDouble(parts[3]);
 
-            Course course = new Course(courseName, courseId, teacherName, semester,courseMark);
+            Course course = new Course(courseName, courseId, teacherName, semester,courseMark,false);
             courseList.add(course);
         }
 
@@ -155,10 +158,10 @@ public class HelloController extends Application {
 
 
         TableColumn<Course, Double> courseMarkColumn = new TableColumn<>("Course Mark");
-        courseMarkColumn.setCellValueFactory(new PropertyValueFactory<>("courseMark"));
+        courseMarkColumn.setCellValueFactory(new PropertyValueFactory<>("mark"));
 
         TableColumn<Course, Double> GPAcolumn = new TableColumn<>("GPA");
-        GPAcolumn.setCellValueFactory(new PropertyValueFactory<>("GPA"));
+        GPAcolumn.setCellValueFactory(new PropertyValueFactory<>("Gpa"));
 
         // Add the columns to the table
         courseTable.getColumns().addAll(courseNameColumn, courseIdColumn, teacherNameColumn, semesterColumn,courseMarkColumn, GPAcolumn);
@@ -234,24 +237,37 @@ public class HelloController extends Application {
 
         // Add button
         JFXButton addButton = new JFXButton("Add");
-        addButton.setOnAction(event -> addCourseButtonClicked());
+        Label errorMsg = new Label();
 
+        addButton.setOnAction(event -> {
+            try {
+                addCourseButtonClicked();
+                errorMsg.setText("");
+            } catch (InputFieldException e) {
+                errorMsg.setText(e.getMessage());
+                errorMsg.setTextFill(Color.rgb(255,0,0));
+            }
+        });
         // Delete button
         JFXButton deleteButton = new JFXButton("Delete");
         deleteButton.setOnAction(event -> deleteCourseButtonClicked());
-
+        addButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+        deleteButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white;");
         // Button HBox
         HBox courseInfo_Add_DeleteBox = new HBox();
         courseInfo_Add_DeleteBox.setPadding(new Insets(10));
         courseInfo_Add_DeleteBox.setSpacing(10);
         courseInfo_Add_DeleteBox.getChildren().addAll(courseNameField, courseIdField, teacherNameField,semesterInput, courseMarkField, addButton, deleteButton, gpaLabel);
-
+        VBox courseInfo_Add_Delete_ErrorBox = new VBox();
+        courseInfo_Add_Delete_ErrorBox.setPadding(new Insets(10));
+        courseInfo_Add_Delete_ErrorBox.setSpacing(10);
+        courseInfo_Add_Delete_ErrorBox.getChildren().addAll(courseInfo_Add_DeleteBox,errorMsg);
         courseTable.setItems(getCourses());
         displayCourseTable();
         // BorderPane
         BorderPane borderPane = new BorderPane();
         borderPane.setCenter(courseTable);
-        borderPane.setBottom(courseInfo_Add_DeleteBox);
+        borderPane.setBottom(courseInfo_Add_Delete_ErrorBox);
 
         // VBox
         VBox vBox = new VBox();
@@ -280,35 +296,66 @@ public class HelloController extends Application {
 
         gpaLabel.setText("Average GPA: " + String.format("%.2f", Course.averageGPAOf(courseTable)));
     }
-    public void addCourseButtonClicked() {
-        if (!courseNameField.getText().isEmpty() &&!courseIdField.getText().isEmpty()&& !semesterInput.getSelectionModel().isEmpty()&&!teacherNameField.getText().isEmpty()) {
-            String courseName = courseNameField.getText();
-            String courseId = courseIdField.getText();
-            int semester = semesterInput.getValue();
-            String teacherName = teacherNameField.getText();
-
-            double mark;
-            if(courseMarkField.getText().isEmpty()){
-                mark=0;
-            }
-            else mark=Double.parseDouble(courseMarkField.getText());
-            Course course = new Course(courseName,courseId, teacherName, semester, mark);
-            courseTable.getItems().add(course);
-
-            nameInput.clear();
-            semesterInput.getSelectionModel().clearSelection();
-            courseMarkField.clear();
-
-            gpaLabel.setText("Average GPA:"+String.format("%.2f",Course.averageGPAOf(courseTable)));
+    public static boolean isNumeric(String str) {
+        Pattern pattern = Pattern.compile("[0-9]+[.]{0,1}[0-9]*[dD]{0,1}");
+        Matcher isNum = pattern.matcher(str);
+        if (!isNum.matches()) {
+            return false;
         }
+        return true;
+    }
+    public void addCourseButtonClicked() throws InputFieldException {
+        if(courseNameField.getText().isEmpty()){
+            throw new InputFieldException("course Name field not completed");
+        }
+        if(courseIdField.getText().isEmpty()){
+            throw new InputFieldException("course Id field not completed");
+        }
+        else {
+            for(Course c:courseTable.getItems()){
+                if(Objects.equals(c.getCourseId(), courseIdField.getText())){
+                    throw new InputFieldException("course Id should be unique");
+                }
+            }
+        }
+        if(semesterInput.getSelectionModel().isEmpty()){
+            throw new InputFieldException("Please select a semester");
+        }
+        if(teacherNameField.getText().isEmpty()){
+            throw new InputFieldException("Please fill in the teacher name");
+        }
+        if(!courseMarkField.getText().isEmpty()&&!isNumeric(courseMarkField.getText())){
+            throw new InputFieldException("Please fill in an number in the Mark field");
+        }
+
+        String courseName = courseNameField.getText();
+        String courseId = courseIdField.getText();
+        int semester = semesterInput.getValue();
+        String teacherName = teacherNameField.getText();
+        String courseMark = courseMarkField.getText();
+
+        Course course;
+        if(courseMark.isEmpty()){
+            course=new Course(courseName,courseId,teacherName,semester,0,true);
+        }
+        else {
+            course=new Course(courseName,courseId,teacherName,semester,Double.parseDouble(courseMark),false);
+        }
+        courseTable.getItems().add(course);
+
+        nameInput.clear();
+        semesterInput.getSelectionModel().clearSelection();
+        courseMarkField.clear();
+
+        gpaLabel.setText("Average GPA:"+String.format("%.2f",Course.averageGPAOf(courseTable)));
     }
     public ObservableList<Course> getCourses() {
         ObservableList<Course> courses = FXCollections.observableArrayList();
-        courses.add(new Course("Physics", "PHY101", "Mr Wang",1, 87));
-        courses.add(new Course( "Mathematics", "MAT101", "Prof Lee",1, 92));
-        courses.add(new Course("Chemistry", "CHE101", "Prof Six",1, 78));
-        courses.add(new Course("English", "ENG101", "Liu ye",1, 85));
-        courses.add(new Course( "History", "HIS101", "Jack",1, 91));
+        courses.add(new Course("Physics", "PHY101", "Mr Wang",1, 87,false));
+        courses.add(new Course( "Mathematics", "MAT101", "Prof Lee",1, 92,false));
+        courses.add(new Course("Chemistry", "CHE101", "Prof Six",1, 78,false));
+        courses.add(new Course("English", "ENG101", "Liu ye",1, 85,false));
+        courses.add(new Course( "History", "HIS101", "Jack",1, 91,false));
         return courses;
     }
     public void deleteAwardButtonClicked() {

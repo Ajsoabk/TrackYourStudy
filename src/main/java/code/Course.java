@@ -1,5 +1,6 @@
 package code;
 
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -12,19 +13,44 @@ public class Course {
     private final SimpleStringProperty teacherName;
     private final SimpleDoubleProperty mark;
     private final SimpleDoubleProperty gpa;
+    private final SimpleBooleanProperty studying;
 
-    public Course(String name, String courseId,String teacher, int semester, double mark) {
+    public Course(String name, String courseId,String teacher, int semester, double mark,boolean studying) {
         this.courseName = new SimpleStringProperty(name);
         this.courseId = new SimpleStringProperty(courseId);
         this.teacherName=new SimpleStringProperty(teacher);
         this.semester = new SimpleIntegerProperty(semester);
-        this.mark = new SimpleDoubleProperty(mark);
-        this.gpa = calculateGpa(mark);
+        this.studying = new SimpleBooleanProperty(studying);
+        if(!this.studying.get()){
+            this.mark = new SimpleDoubleProperty(mark);
+            this.gpa = new SimpleDoubleProperty(calculateGpa(mark));
+        }
+        else{
+            this.mark=new SimpleDoubleProperty();
+            this.gpa=new SimpleDoubleProperty();
+        }
     }
     @Override
     public String toString(){
         return getCourseName() + ","+getCourseId() + ","+getTeacherName() + ","+getSemester()+","+getMark();
     }
+
+    public void setMark(double mark) {
+        this.mark.set(mark);
+    }
+
+    public boolean isStudying() {
+        return studying.get();
+    }
+
+    public SimpleBooleanProperty studyingProperty() {
+        return studying;
+    }
+
+    public void setStudying(boolean studying) {
+        this.studying.set(studying);
+    }
+
     public static String headColumn(){
         return "Course Name,Course ID,Teacher Name,Semester,Course Mark";
     }
@@ -51,17 +77,17 @@ public class Course {
     public void setTeacherName(String teacherName) {
         this.teacherName.set(teacherName);
     }
-    public SimpleDoubleProperty calculateGpa(double mark) {
+    public double calculateGpa(double mark) {
         if (mark >= 90) {
-            return new SimpleDoubleProperty(4.0);
+            return 4.0;
         } else if (mark >= 80) {
-            return new SimpleDoubleProperty(3.0);
+            return 3.0;
         } else if (mark >= 70) {
-            return new SimpleDoubleProperty(2.0);
+            return 2.0;
         } else if (mark >= 60) {
-            return new SimpleDoubleProperty(1.0);
-        } else {
-            return new SimpleDoubleProperty(0);
+            return 1.0;
+        }else {
+            return 0;
         }
     }
     public static double averageGPAOf(TableView<Course> table){
@@ -69,8 +95,10 @@ public class Course {
         double totalGpa = 0;
         int count = 0;
         for (Course c : table.getItems()) {
-            totalGpa += c.getGpa();
-            count++;
+            if(c.getGpa()!=-1){
+                totalGpa += c.getGpa();
+                count++;
+            }
         }
         return count > 0 ? totalGpa / count : 0;
     }
