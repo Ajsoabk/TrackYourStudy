@@ -137,7 +137,7 @@ public class HelloController extends Application {
                 courseList.add(new Course(courseName,courseId,teacherName,semester,0,true));
             }
             else{
-                courseList.add(new Course(courseName,courseId,teacherName,semester,Double.parseDouble(parts[4]),true));
+                courseList.add(new Course(courseName,courseId,teacherName,semester,Double.parseDouble(parts[4]),false));
             }
         }
         scanner.close();
