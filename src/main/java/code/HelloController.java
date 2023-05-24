@@ -438,7 +438,7 @@ public class HelloController extends Application {
             editBox.getChildren().addAll(nameLabel2, nameField2, qmulLabel2, qmulField2, buptLabel2, buptField2, saveBtn, cancelBtn);
 
             // Create a Scene for the edit window and show it
-            Scene editScene = new Scene(editBox, 300, 200);
+            Scene editScene = new Scene(editBox, 600, 500);
             editStage.setScene(editScene);
             editStage.showAndWait();
         });
@@ -482,7 +482,16 @@ public class HelloController extends Application {
 
         // Buttons
         Button addButton = new Button("Add");
-        addButton.setOnAction(event -> addAwardButtonClicked());
+        Label errMsg = new Label();
+        addButton.setOnAction(event -> {
+            try {
+                addAwardButtonClicked();
+                errMsg.setText("");
+            } catch (InputFieldException e) {
+                errMsg.setText(e.getMessage());
+                errMsg.setTextFill(Color.rgb(255,0,0));
+            }
+        });
         Button deleteButton = new Button("Delete");
         deleteButton.setOnAction(event -> deleteAwardButtonClicked());
 
@@ -508,10 +517,17 @@ public class HelloController extends Application {
         deleteButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white;");
         awardTable.setStyle("-fx-border-style: none none solid none; -fx-border-width: 1px; -fx-border-color: black;");
 
-        VBox rootBox=new VBox(profileBox,borderPane);
+        VBox rootBox=new VBox(profileBox,borderPane,errMsg);
         return rootBox;
     }
-    public void addAwardButtonClicked() {
+    public void addAwardButtonClicked() throws InputFieldException {
+        if(timeInput.getValue()==null){
+            throw new InputFieldException("Please select a time");
+        }
+        LocalDate now=LocalDate.now();
+        if(timeInput.getValue().compareTo(now)>0){
+            throw new InputFieldException("Please select a time in past");
+        }
         if (timeInput.getValue() != null) {
             Award award = new Award();
             award.setTime(timeInput.getValue());
